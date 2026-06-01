@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a3a5c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KandasBridge">
+<meta name="description" content="Integration support for Kazakh repatriates — Kandas">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>KandasBridge</title>
+<style>
+:root {
+  --navy: #1a3a5c;
+  --navy-light: #254d78;
+  --navy-deep: #0e2236;
+  --teal: #0d9488;
+  --teal-light: #14b8a6;
+  --amber: #d97706;
+  --amber-light: #f59e0b;
+  --coral: #e05a47;
+  --purple: #6d5bd0;
+  --gold: #c9a227;
+  --bg: #f4f1eb;
+  --bg2: #eae6dd;
+  --white: #ffffff;
+  --text: #1a1a1a;
+  --text-muted: #6b6b6b;
+  --text-light: #9b9b9b;
+  --border: rgba(0,0,0,0.08);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.14);
+  --font-display: 'Unbounded', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  height: 100%;
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+}
+
+/* ── SCREENS ── */
+.screen {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  transform: translateX(20px);
+  overflow: hidden;
+}
+.screen.active {
+  opacity: 1; pointer-events: all;
+  transform: translateX(0);
+}
+.screen.slide-back { transform: translateX(-20px); }
+
+/* ── STATUS BAR ── */
+.status-bar {
+  background: var(--navy-deep);
+  color: rgba(255,255,255,0.9);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 10px 18px 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+.status-icons { display: flex; gap: 6px; align-items: center; }
+.signal-bar { display: flex; gap: 2px; align-items: flex-end; }
+.signal-bar span { width: 3px; background: rgba(255,255,255,0.8); border-radius: 1px; }
+
+/* ── HEADER ── */
+.header {
+  background: var(--navy);
+  padding: 14px 20px 16px;
+  flex-shrink: 0;
+  position: relative;
+}
+.header-row { display: flex; align-items: center; justify-content: space-between; }
+.header-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  letter-spacing: 0.02em;
+}
+.header-sub { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+.header-icon-btn {
+  width: 36px; height: 36px;
+  background: rgba(255,255,255,0.12);
+  border: none; border-radius: 50%;
+  color: white; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+
+/* ── SCROLL AREA ── */
+.scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px;
+  padding-bottom: 90px;
+}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  display: flex;
+  padding: 8px 0 20px;
+  z-index: 100;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+}
+.nav-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 4px;
+  cursor: pointer; padding: 4px 0;
+  transition: transform 0.15s ease;
+}
+.nav-item:active { transform: scale(0.92); }
+.nav-icon {
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; color: var(--text-light);
+  transition: color 0.2s, transform 0.2s;
+}
+.nav-item.active .nav-icon { color: var(--navy); transform: scale(1.1); }
+.nav-label { font-size: 9px; color: var(--text-light); font-weight: 500; letter-spacing: 0.02em; }
+.nav-item.active .nav-label { color: var(--navy); font-weight: 600; }
+.nav-dot {
+  width: 4px; height: 4px; border-radius: 50%;
+  background: var(--teal); display: none;
+  margin-top: -2px;
+}
+.nav-item.active .nav-dot { display: block; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(0,0,0,0.04);
+}
+.card-header {
+  display: flex; align-items: center;
+  gap: 10px; margin-bottom: 12px;
+}
+.card-icon {
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.card-title { font-weight: 600; font-size: 14px; }
+.card-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+/* ── HERO CARD ── */
+.hero-card {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+.hero-card::before {
+  content: '';
+  position: absolute;
+  top: -30px; right: -30px;
+  width: 120px; height: 120px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 50%;
+}
+.hero-card::after {
+  content: '';
+  position: absolute;
+  bottom: -20px; right: 20px;
+  width: 80px; height: 80px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 50%;
+}
+.hero-greeting { font-size: 12px; color: rgba(255,255,255,0.65); margin-bottom: 4px; }
+.hero-name { font-family: var(--font-display); font-size: 18px; font-weight: 700; margin-bottom: 14px; }
+.hero-stats { display: flex; gap: 20px; }
+.hero-stat-val { font-family: var(--font-display); font-size: 22px; font-weight: 700; }
+.hero-stat-lbl { font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+
+/* ── PROGRESS ── */
+.progress-wrap { margin: 10px 0 4px; }
+.progress-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; }
+.progress-track {
+  height: 6px; background: var(--bg2);
+  border-radius: 10px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; border-radius: 10px;
+  transition: width 1s ease;
+}
+
+/* ── LIST ITEMS ── */
+.list-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.list-item:last-child { border-bottom: none; }
+.list-item:active { background: var(--bg); margin: 0 -16px; padding: 12px 16px; border-radius: 8px; }
+.list-icon {
+  width: 44px; height: 44px;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+.list-text { flex: 1; min-width: 0; }
+.list-title { font-weight: 500; font-size: 14px; }
+.list-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.list-right { font-size: 12px; color: var(--text-light); display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.chevron { font-size: 14px; color: var(--text-light); }
+
+/* ── BADGES / TAGS ── */
+.badge {
+  display: inline-block;
+  font-size: 10px; font-weight: 600;
+  padding: 3px 8px; border-radius: 20px;
+  letter-spacing: 0.02em;
+}
+.badge-teal { background: #ccfbf1; color: #0f766e; }
+.badge-amber { background: #fef3c7; color: #92400e; }
+.badge-coral { background: #fee2e2; color: #991b1b; }
+.badge-navy { background: #dbeafe; color: #1e40af; }
+.badge-purple { background: #ede9fe; color: #5b21b6; }
+
+/* ── SECTION HEADING ── */
+.section-heading {
+  font-family: var(--font-display);
+  font-size: 11px; font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 20px 0 10px;
+}
+.section-heading:first-child { margin-top: 0; }
+
+/* ── QUICK ACTIONS ── */
+.quick-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.quick-card {
+  background: var(--white);
+  border-radius: var(--radius-sm);
+  padding: 14px 12px;
+  cursor: pointer;
+  border: 1px solid rgba(0,0,0,0.05);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.quick-card:active { transform: scale(0.97); box-shadow: 0 1px 6px rgba(0,0,0,0.08); }
+.quick-card-icon { font-size: 24px; margin-bottom: 6px; }
+.quick-card-title { font-size: 12px; font-weight: 600; color: var(--text); }
+.quick-card-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+/* ── CHAT ── */
+.chat-area {
+  flex: 1; overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px;
+  padding-bottom: 16px;
+  display: flex; flex-direction: column;
+  gap: 10px;
+}
+.chat-bubble {
+  max-width: 82%;
+  padding: 10px 14px;
+  border-radius: 18px;
+  font-size: 13px;
+  line-height: 1.5;
+  animation: fadeUp 0.3s ease;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.bubble-bot {
+  background: var(--white);
+  color: var(--text);
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.bubble-user {
+  background: var(--navy);
+  color: white;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+.bubble-typing {
+  background: var(--white);
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  padding: 12px 16px;
+}
+.typing-dots { display: flex; gap: 4px; }
+.typing-dots span {
+  width: 7px; height: 7px;
+  background: var(--text-light);
+  border-radius: 50%;
+  animation: bounce 1.2s ease infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-5px); }
+}
+.chat-input-area {
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  padding: 10px 12px 28px;
+  display: flex; gap: 8px; align-items: flex-end;
+  flex-shrink: 0;
+}
+.chat-input {
+  flex: 1;
+  background: var(--bg);
+  border: none; border-radius: 22px;
+  padding: 10px 16px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  resize: none;
+  min-height: 42px;
+  max-height: 100px;
+  line-height: 1.4;
+}
+.send-btn {
+  width: 42px; height: 42px;
+  background: var(--navy);
+  border: none; border-radius: 50%;
+  color: white; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+  transition: transform 0.15s, background 0.15s;
+}
+.send-btn:active { transform: scale(0.92); background: var(--navy-deep); }
+.lang-selector {
+  display: flex; gap: 6px;
+  padding: 10px 16px 0;
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+}
+.lang-btn {
+  background: var(--bg);
+  border: none; border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 11px; font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer; white-space: nowrap;
+  transition: all 0.15s;
+}
+.lang-btn.active {
+  background: var(--navy);
+  color: white;
+}
+.quick-prompts {
+  display: flex; gap: 6px;
+  padding: 10px 16px;
+  overflow-x: auto; scrollbar-width: none;
+  flex-shrink: 0;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+}
+.qp-btn {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 11px; font-weight: 500;
+  color: var(--navy);
+  cursor: pointer; white-space: nowrap;
+  transition: all 0.15s;
+}
+.qp-btn:active { background: var(--navy); color: white; }
+
+/* ── RESOURCES ── */
+.resource-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+.resource-top {
+  height: 6px;
+}
+.resource-body { padding: 14px 16px; }
+.resource-category {
+  font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  color: var(--text-muted); margin-bottom: 4px;
+}
+.resource-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.resource-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px; }
+.resource-meta { display: flex; gap: 8px; align-items: center; }
+
+/* ── CHECKLIST ── */
+.checklist-item {
+  display: flex; align-items: flex-start;
+  gap: 10px; padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.checklist-item:last-child { border-bottom: none; }
+.check-circle {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  flex-shrink: 0; margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.check-circle.done {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: white; font-size: 12px;
+}
+.checklist-text { flex: 1; }
+.check-title { font-size: 13px; font-weight: 500; }
+.check-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+/* ── OFFICER DASHBOARD ── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px; margin-bottom: 12px;
+}
+.stat-card {
+  background: var(--white);
+  border-radius: var(--radius-sm);
+  padding: 12px 10px;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.stat-num {
+  font-family: var(--font-display);
+  font-size: 22px; font-weight: 700;
+  color: var(--navy);
+}
+.stat-lbl { font-size: 10px; color: var(--text-muted); margin-top: 3px; line-height: 1.3; }
+.stat-change { font-size: 10px; margin-top: 2px; }
+.bar-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 8px;
+}
+.bar-label { font-size: 11px; color: var(--text); width: 70px; flex-shrink: 0; }
+.bar-track { flex: 1; height: 8px; background: var(--bg2); border-radius: 10px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 10px; }
+.bar-pct { font-size: 11px; font-weight: 600; color: var(--text-muted); width: 28px; text-align: right; }
+
+/* ── ONBOARDING ── */
+.onboard-screen {
+  position: absolute; inset: 0;
+  background: var(--navy-deep);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 40px 32px;
+  z-index: 999;
+  transition: opacity 0.5s ease;
+}
+.onboard-screen.hidden { opacity: 0; pointer-events: none; }
+.onboard-logo {
+  font-family: var(--font-display);
+  font-size: 28px; font-weight: 700;
+  color: white;
+  margin-bottom: 8px;
+  letter-spacing: 0.02em;
+}
+.onboard-logo span { color: var(--teal-light); }
+.onboard-tagline {
+  font-size: 14px; color: rgba(255,255,255,0.6);
+  text-align: center; line-height: 1.6;
+  margin-bottom: 40px;
+}
+.onboard-pattern {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle at 20% 20%, rgba(13,148,136,0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(201,162,39,0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+.role-cards { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+.role-card {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 14px;
+  transition: all 0.2s;
+}
+.role-card:active { background: rgba(255,255,255,0.15); transform: scale(0.98); }
+.role-emoji { font-size: 28px; }
+.role-title { font-size: 15px; font-weight: 600; color: white; }
+.role-desc { font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+
+/* ── ANIMATIONS ── */
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-in { animation: slideUp 0.4s ease forwards; }
+
+/* ── NOTIFICATION BADGE ── */
+.notif-badge {
+  position: absolute;
+  top: 0; right: 0;
+  width: 8px; height: 8px;
+  background: var(--coral);
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+}
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 100px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--navy-deep);
+  color: white; font-size: 12px; font-weight: 500;
+  padding: 10px 18px; border-radius: 30px;
+  opacity: 0; transition: all 0.3s ease;
+  pointer-events: none; z-index: 9999;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.map-placeholder {
+  background: linear-gradient(135deg, #e8f4f8 0%, #d4e8f0 100%);
+  border-radius: var(--radius-sm);
+  height: 140px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 10px;
+  font-size: 32px;
+  flex-direction: column; gap: 6px;
+  border: 1px solid rgba(0,0,0,0.08);
+  position: relative; overflow: hidden;
+}
+.map-pin {
+  position: absolute;
+  font-size: 24px;
+  animation: pulse 2s ease infinite;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1) translateY(0); }
+  50% { transform: scale(1.2) translateY(-4px); }
+}
+.map-label {
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  background: white; border-radius: 20px; padding: 4px 10px;
+  font-size: 10px; font-weight: 600; color: var(--navy);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+</style>
+</head>
+<body>
+
+<!-- ONBOARDING -->
+<div class="onboard-screen" id="onboard">
+  <div class="onboard-pattern"></div>
+  <div class="onboard-logo">Kandas<span>Bridge</span></div>
+  <div class="onboard-tagline">Үйге қош келдіңіз<br><span style="font-size:12px;opacity:0.7">Welcome home · Добро пожаловать · 欢迎</span></div>
+  <div class="role-cards">
+    <div class="role-card" onclick="selectRole('migrant')">
+      <div class="role-emoji">🏠</div>
+      <div>
+        <div class="role-title">Kandas / Migrant</div>
+        <div class="role-desc">I am a Kazakh repatriate seeking integration support</div>
+      </div>
+    </div>
+    <div class="role-card" onclick="selectRole('officer')">
+      <div class="role-emoji">📋</div>
+      <div>
+        <div class="role-title">Migration Officer</div>
+        <div class="role-desc">I work with migration cases and policy</div>
+      </div>
+    </div>
+    <div class="role-card" onclick="selectRole('researcher')">
+      <div class="role-emoji">🔬</div>
+      <div>
+        <div class="role-title">Researcher / Specialist</div>
+        <div class="role-desc">I study migration, policy, and cultural integration</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══ SCREEN: HOME ═══ -->
+<div class="screen active" id="screen-home">
+  <div class="status-bar">
+    <span id="time-display">9:41</span>
+    <div class="status-icons">
+      <div class="signal-bar">
+        <span style="height:5px"></span><span style="height:8px"></span><span style="height:11px"></span><span style="height:14px"></span>
+      </div>
+      <span>📶</span><span style="font-size:13px">🔋</span>
+    </div>
+  </div>
+  <div class="header">
+    <div class="header-row">
+      <div>
+        <div class="header-title">KandasBridge</div>
+        <div class="header-sub" id="home-role-label">Your integration companion</div>
+      </div>
+      <button class="header-icon-btn" onclick="showToast('🔔 No new notifications')">🔔</button>
+    </div>
+  </div>
+  <div class="scroll-area">
+
+    <div class="hero-card">
+      <div class="hero-greeting" id="greeting">Сәлем, welcome back 👋</div>
+      <div class="hero-name" id="user-name">Aizat K.</div>
+      <div class="hero-stats">
+        <div>
+          <div class="hero-stat-val">3yr</div>
+          <div class="hero-stat-lbl">In Kazakhstan</div>
+        </div>
+        <div>
+          <div class="hero-stat-val">67%</div>
+          <div class="hero-stat-lbl">Docs complete</div>
+        </div>
+        <div>
+          <div class="hero-stat-val">B1</div>
+          <div class="hero-stat-lbl">Kazakh level</div>
+        </div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-label">
+          <span style="color:rgba(255,255,255,0.7);font-size:11px">Integration progress</span>
+          <span style="color:rgba(255,255,255,0.9);font-size:11px;font-weight:600">58%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" style="width:58%;background:linear-gradient(90deg, var(--teal-light), var(--gold))"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-heading">Quick access</div>
+    <div class="quick-grid">
+      <div class="quick-card" onclick="goToTab('tab-guide')">
+        <div class="quick-card-icon">🤖</div>
+        <div class="quick-card-title">AI Guide</div>
+        <div class="quick-card-sub">Ask anything</div>
+      </div>
+      <div class="quick-card" onclick="goToTab('tab-docs')">
+        <div class="quick-card-icon">📄</div>
+        <div class="quick-card-title">My Documents</div>
+        <div class="quick-card-sub">7 of 12 done</div>
+      </div>
+      <div class="quick-card" onclick="goToTab('tab-resources')">
+        <div class="quick-card-icon">📍</div>
+        <div class="quick-card-title">Find Services</div>
+        <div class="quick-card-sub">Near you</div>
+      </div>
+      <div class="quick-card" onclick="showToast('🌐 Community coming soon!')">
+        <div class="quick-card-icon">👥</div>
+        <div class="quick-card-title">Community</div>
+        <div class="quick-card-sub">Meet Kandas</div>
+      </div>
+    </div>
+
+    <div class="section-heading">Language journey</div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#e0f2fe">🗣️</div>
+        <div>
+          <div class="card-title">Kazakh Language</div>
+          <div class="card-subtitle">Intermediate level · Keep going!</div>
+        </div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-label">
+          <span style="font-size:11px;color:var(--text-muted)">Beginner</span>
+          <span style="font-size:11px;color:var(--navy);font-weight:600">Intermediate</span>
+          <span style="font-size:11px;color:var(--text-muted)">Fluent</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" style="width:55%;background:var(--teal)"></div>
+        </div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <div style="flex:1;background:var(--bg);border-radius:var(--radius-sm);padding:10px;text-align:center">
+          <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--navy)">12</div>
+          <div style="font-size:10px;color:var(--text-muted)">Day streak 🔥</div>
+        </div>
+        <div style="flex:1;background:var(--bg);border-radius:var(--radius-sm);padding:10px;text-align:center">
+          <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--teal)">340</div>
+          <div style="font-size:10px;color:var(--text-muted)">Words learned</div>
+        </div>
+        <div style="flex:1;background:var(--bg);border-radius:var(--radius-sm);padding:10px;text-align:center">
+          <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--amber)">8.5h</div>
+          <div style="font-size:10px;color:var(--text-muted)">This week</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-heading">Upcoming</div>
+    <div class="card">
+      <div class="list-item" onclick="showToast('📅 Opening calendar…')">
+        <div class="list-icon" style="background:#fef3c7">📅</div>
+        <div class="list-text">
+          <div class="list-title">Migration office appointment</div>
+          <div class="list-sub">June 5, 2026 · 10:00 AM</div>
+        </div>
+        <div class="list-right">
+          <span class="badge badge-amber">In 5 days</span>
+          <span class="chevron">›</span>
+        </div>
+      </div>
+      <div class="list-item" onclick="showToast('🏫 Opening event details…')">
+        <div class="list-icon" style="background:#ccfbf1">🏫</div>
+        <div class="list-text">
+          <div class="list-title">Kazakh language class</div>
+          <div class="list-sub">Every Tuesday · 6:00 PM</div>
+        </div>
+        <div class="list-right">
+          <span class="badge badge-teal">Tomorrow</span>
+          <span class="chevron">›</span>
+        </div>
+      </div>
+      <div class="list-item" onclick="showToast('👥 Opening community event…')">
+        <div class="list-icon" style="background:#ede9fe">🎉</div>
+        <div class="list-text">
+          <div class="list-title">Kandas community meetup</div>
+          <div class="list-sub">June 8 · Cultural Center Almaty</div>
+        </div>
+        <div class="list-right">
+          <span class="badge badge-purple">Free</span>
+          <span class="chevron">›</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="bottom-nav" id="nav-home">
+    <div class="nav-item active" onclick="goToTab('tab-home')">
+      <div class="nav-icon">🏠</div>
+      <div class="nav-label">Home</div>
+      <div class="nav-dot"></div>
+    </div>
+    <div class="nav-item" onclick="goToTab('tab-guide')">
+      <div class="nav-icon">🤖</div>
+      <div class="nav-label">AI Guide</div>
+      <div class="nav-dot"></div>
+    </div>
+    <div class="nav-item" onclick="goToTab('tab-docs')">
+      <div class="nav-icon">📄</div>
+      <div class="nav-label">Docs</div>
+      <div class="nav-dot"></div>
+    </div>
+    <div class="nav-item" onclick="goToTab('tab-resources')">
+      <div class="nav-icon">📍</div>
+      <div class="nav-label">Services</div>
+      <div class="nav-dot"></div>
+    </div>
+    <div class="nav-item" onclick="goToTab('tab-profile')">
+      <div class="nav-icon">👤</div>
+      <div class="nav-label">Profile</div>
+      <div class="nav-dot"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SCREEN: AI GUIDE ═══ -->
+<div class="screen" id="screen-guide">
+  <div class="status-bar">
+    <span id="time-guide">9:41</span>
+    <div class="status-icons"><span>📶</span><span style="font-size:13px">🔋</span></div>
+  </div>
+  <div class="header">
+    <div class="header-row">
+      <div>
+        <div class="header-title">AI Integration Guide</div>
+        <div class="header-sub">Ask in any language</div>
+      </div>
+      <button class="header-icon-btn" onclick="clearChat()">🗑️</button>
+    </div>
+  </div>
+  <div class="lang-selector">
+    <button class="lang-btn active" onclick="setLang(this,'en')">English</button>
+    <button class="lang-btn" onclick="setLang(this,'kz')">Қазақша</button>
+    <button class="lang-btn" onclick="setLang(this,'ru')">Русский</button>
+    <button class="lang-btn" onclick="setLang(this,'zh')">中文</button>
+    <button class="lang-btn" onclick="setLang(this,'mn')">Монгол</button>
+  </div>
+  <div class="quick-prompts">
+    <button class="qp-btn" onclick="sendQuick('How do I get Oralmandyk status?')">Oralmandyk status</button>
+    <button class="qp-btn" onclick="sendQuick('How do I enroll my children in school?')">School enrollment</button>
+    <button class="qp-btn" onclick="sendQuick('How do I find a job in Kazakhstan?')">Finding work</button>
+    <button class="qp-btn" onclick="sendQuick('How do I register with healthcare?')">Healthcare</button>
+    <button class="qp-btn" onclick="sendQuick('What documents do I need to stay permanently?')">Permanent residency</button>
+  </div>
+  <div class="chat-area" id="chat-area">
+    <div class="chat-bubble bubble-bot">
+      👋 Сәлем! I'm your KandasBridge AI guide. I can help you with:<br><br>
+      • Legal status & documentation<br>
+      • School & education<br>
+      • Healthcare registration<br>
+      • Finding work<br>
+      • Cultural adaptation tips<br><br>
+      Ask me anything — in any language!
+    </div>
+  </div>
+  <div class="chat-input-area">
+    <textarea class="chat-input" id="chat-input" placeholder="Ask a question…" rows="1" onkeydown="handleKey(event)"></textarea>
+    <button class="send-btn" onclick="sendMessage()">➤</button>
+  </div>
+</div>
+
+<!-- ═══ SCREEN: DOCUMENTS ═══ -->
+<div class="screen" id="screen-docs">
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="status-icons"><span>📶</span><span style="font-size:13px">🔋</span></div>
+  </div>
+  <div class="header">
+    <div class="header-row">
+      <div>
+        <div class="header-title">Document Tracker</div>
+        <div class="header-sub">7 of 12 completed</div>
+      </div>
+      <button class="header-icon-btn" onclick="showToast('📤 Share your progress…')">📤</button>
+    </div>
+  </div>
+  <div class="scroll-area">
+
+    <div class="card" style="background:linear-gradient(135deg,var(--teal),var(--teal-light));color:white">
+      <div style="font-size:12px;opacity:0.8;margin-bottom:6px">Overall completion</div>
+      <div style="font-family:var(--font-display);font-size:32px;font-weight:700">58%</div>
+      <div class="progress-track" style="margin-top:10px;background:rgba(255,255,255,0.25)">
+        <div class="progress-fill" style="width:58%;background:white"></div>
+      </div>
+      <div style="font-size:11px;margin-top:6px;opacity:0.75">Estimated completion: Aug 2026</div>
+    </div>
+
+    <div class="section-heading">Phase 1 — Arrival ✅</div>
+    <div class="card" id="docs-phase1">
+      <div class="checklist-item" onclick="toggleCheck(this)">
+        <div class="check-circle done">✓</div>
+        <div class="checklist-text">
+          <div class="check-title">Valid passport</div>
+          <div class="check-sub">Original + 2 copies</div>
+        </div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this)">
+        <div class="check-circle done">✓</div>
+        <div class="checklist-text">
+          <div class="check-title">Birth certificate</div>
+          <div class="check-sub">Translated to Kazakh/Russian</div>
+        </div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this)">
+        <div class="check-circle done">✓</div>
+        <div class="checklist-text">
+          <div class="check-title">Migration card (registration)</div>
+          <div class="check-sub">Within 3 days of arrival</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-heading">Phase 2 — Oralmandyk Status 🔄</div>
+    <div class="card">
+      <div class="checklist-item" onclick="toggleCheck(this)">
+        <div class="check-circle done">✓</div>
+        <div class="checklist-text">
+          <div class="check-title">Ethnic Kazakh origin proof</div>
+          <div class="check-sub">Family documents, ancestry records</div>
+        </div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this)">
+        <div class="check-circle done">✓</div>
+        <div class="checklist-text">
+          <div class="check-title">Application Form 17b</div>
+          <div class="check-sub">Submitted to migration office</div>
+        </div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this)">
+        <div class="check-circle"></div>
+        <div class="checklist-text">
+          <div class="check-title">Kazakh language test</div>
+          <div class="check-sub">Scheduled: June 15, 2026</div>
+        </div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this)">
+        <div class="check-circle"></div>
+        <div class="checklist-text">
+          <div class="check-title">Oralmandyk status certificate</div>
+          <div class="check-sub">Awaiting language test result</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-heading">Phase 3 — Settlement 📋</div>
+    <div class="card">
+      <div class="checklist-item" onclick="toggleCheck(this)">
+        <div class="check-circle done">✓</div>
+        <div class="checklist-text">
+          <div class="check-title">Residential address registration</div>
+          <div class="check-sub">Local akimat (municipality)</div>
+        </div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this)">
+        <div class="check-circle"></div>
+        <div class="checklist-text">
+          <div class="check-title">IIN (tax number) registration</div>
+          <div class="check-sub">Required for employment</div>
+        </div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this)">
+        <div class="check-circle"></div>
+        <div class="checklist-text">
+          <div class="check-title">Health insurance enrollment</div>
+          <div class="check-sub">MSHI (mandatory state insurance)</div>
+        </div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this)">
+        <div class="check-circle"></div>
+        <div class="checklist-text">
+          <div class="check-title">Children's school enrollment</div>
+          <div class="check-sub">Contact local education dept.</div>
+        </div>
+      </div>
+      <div class="checklist-item" onclick="toggleCheck(this)">
+        <div class="check-circle"></div>
+        <div class="checklist-text">
+          <div class="check-title">Kazakhstan citizenship application</div>
+          <div class="check-sub">Available after 5 years residency</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goToTab('tab-home')"><div class="nav-icon">🏠</div><div class="nav-label">Home</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goToTab('tab-guide')"><div class="nav-icon">🤖</div><div class="nav-label">AI Guide</div><div class="nav-dot"></div></div>
+    <div class="nav-item active" onclick="goToTab('tab-docs')"><div class="nav-icon">📄</div><div class="nav-label">Docs</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goToTab('tab-resources')"><div class="nav-icon">📍</div><div class="nav-label">Services</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goToTab('tab-profile')"><div class="nav-icon">👤</div><div class="nav-label">Profile</div><div class="nav-dot"></div></div>
+  </div>
+</div>
+
+<!-- ═══ SCREEN: RESOURCES ═══ -->
+<div class="screen" id="screen-resources">
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="status-icons"><span>📶</span><span style="font-size:13px">🔋</span></div>
+  </div>
+  <div class="header">
+    <div class="header-row">
+      <div>
+        <div class="header-title">Find Services</div>
+        <div class="header-sub">Near Almaty</div>
+      </div>
+      <button class="header-icon-btn" onclick="showToast('📍 Getting your location…')">📍</button>
+    </div>
+  </div>
+  <div class="scroll-area">
+
+    <div class="map-placeholder" onclick="showToast('🗺️ Full map opening…')">
+      <div style="position:absolute;top:30%;left:40%"><span class="map-pin">📍</span></div>
+      <div style="position:absolute;top:50%;left:60%"><span style="font-size:18px;opacity:0.5">📍</span></div>
+      <div style="position:absolute;top:60%;left:25%"><span style="font-size:18px;opacity:0.5">📍</span></div>
+      <div class="map-label">Almaty · 3 services nearby</div>
+    </div>
+
+    <div class="section-heading">Migration offices</div>
+    <div class="resource-card" onclick="showToast('📞 Calling office…')">
+      <div class="resource-top" style="background:var(--navy)"></div>
+      <div class="resource-body">
+        <div class="resource-category">Government</div>
+        <div class="resource-title">Almaty Migration Service</div>
+        <div class="resource-desc">Main city migration office. Handles Oralmandyk applications, permits, and registrations.</div>
+        <div class="resource-meta">
+          <span class="badge badge-teal">Open now</span>
+          <span style="font-size:11px;color:var(--text-muted)">1.2 km away · Abay Ave. 32</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-heading">Language schools</div>
+    <div class="resource-card" onclick="showToast('🏫 Opening school info…')">
+      <div class="resource-top" style="background:var(--teal)"></div>
+      <div class="resource-body">
+        <div class="resource-category">Education</div>
+        <div class="resource-title">Kazakh Language Center for Oralmans</div>
+        <div class="resource-desc">Free intensive Kazakh language courses for repatriates. All levels. Morning & evening classes.</div>
+        <div class="resource-meta">
+          <span class="badge badge-teal">Free</span>
+          <span style="font-size:11px;color:var(--text-muted)">0.8 km · Satpayev St. 7</span>
+        </div>
+      </div>
+    </div>
+    <div class="resource-card" onclick="showToast('📚 Opening program…')">
+      <div class="resource-top" style="background:var(--purple)"></div>
+      <div class="resource-body">
+        <div class="resource-category">Community</div>
+        <div class="resource-title">Oralman Support Association</div>
+        <div class="resource-desc">Peer mentorship, cultural orientation, legal aid, and social events for newly arrived Kandas.</div>
+        <div class="resource-meta">
+          <span class="badge badge-navy">Mon–Fri</span>
+          <span style="font-size:11px;color:var(--text-muted)">2.4 km · Dostyk Ave. 156</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-heading">Healthcare</div>
+    <div class="resource-card" onclick="showToast('🏥 Opening clinic info…')">
+      <div class="resource-top" style="background:var(--coral)"></div>
+      <div class="resource-body">
+        <div class="resource-category">Healthcare</div>
+        <div class="resource-title">City Polyclinic #7</div>
+        <div class="resource-desc">Primary care clinic. Accepts new MSHI registrations. Russian and Kazakh-speaking doctors available.</div>
+        <div class="resource-meta">
+          <span class="badge badge-teal">Open now</span>
+          <span style="font-size:11px;color:var(--text-muted)">1.8 km · Raiymbek Ave. 212</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-heading">Employment</div>
+    <div class="resource-card" onclick="showToast('💼 Opening job portal…')">
+      <div class="resource-top" style="background:var(--amber)"></div>
+      <div class="resource-body">
+        <div class="resource-category">Employment</div>
+        <div class="resource-title">Kandas Job Placement Program</div>
+        <div class="resource-desc">Government-run program matching repatriates to local employers. Free CV support and interview coaching.</div>
+        <div class="resource-meta">
+          <span class="badge badge-amber">Enrollment open</span>
+          <span style="font-size:11px;color:var(--text-muted)">Online + Almaty office</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goToTab('tab-home')"><div class="nav-icon">🏠</div><div class="nav-label">Home</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goToTab('tab-guide')"><div class="nav-icon">🤖</div><div class="nav-label">AI Guide</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goToTab('tab-docs')"><div class="nav-icon">📄</div><div class="nav-label">Docs</div><div class="nav-dot"></div></div>
+    <div class="nav-item active" onclick="goToTab('tab-resources')"><div class="nav-icon">📍</div><div class="nav-label">Services</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goToTab('tab-profile')"><div class="nav-icon">👤</div><div class="nav-label">Profile</div><div class="nav-dot"></div></div>
+  </div>
+</div>
+
+<!-- ═══ SCREEN: PROFILE / OFFICER ═══ -->
+<div class="screen" id="screen-profile">
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="status-icons"><span>📶</span><span style="font-size:13px">🔋</span></div>
+  </div>
+  <div class="header" id="profile-header">
+    <div class="header-row">
+      <div>
+        <div class="header-title" id="profile-title">My Profile</div>
+        <div class="header-sub" id="profile-sub">Kandas · From China</div>
+      </div>
+      <button class="header-icon-btn" onclick="showToast('⚙️ Settings opening…')">⚙️</button>
+    </div>
+  </div>
+  <div class="scroll-area" id="profile-content">
+
+    <!-- MIGRANT PROFILE (default) -->
+    <div id="migrant-profile">
+      <div class="card" style="text-align:center;padding:24px 16px">
+        <div style="width:72px;height:72px;background:var(--navy);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 12px">👤</div>
+        <div style="font-family:var(--font-display);font-size:18px;font-weight:700;margin-bottom:4px">Aizat Kenzhebaeva</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">Origin: Xinjiang, China · Arrived 2022</div>
+        <div style="display:flex;justify-content:center;gap:8px">
+          <span class="badge badge-navy">Oralmandyk pending</span>
+          <span class="badge badge-teal">Almaty</span>
+        </div>
+      </div>
+
+      <div class="section-heading">Origin & Background</div>
+      <div class="card">
+        <div class="list-item">
+          <div class="list-icon" style="background:#fef3c7">🌍</div>
+          <div class="list-text"><div class="list-title">Country of origin</div><div class="list-sub">China (Xinjiang province)</div></div>
+        </div>
+        <div class="list-item">
+          <div class="list-icon" style="background:#e0f2fe">📅</div>
+          <div class="list-text"><div class="list-title">Year of arrival</div><div class="list-sub">2022 · Age 26</div></div>
+        </div>
+        <div class="list-item">
+          <div class="list-icon" style="background:#ccfbf1">👨‍👩‍👧</div>
+          <div class="list-text"><div class="list-title">Migration unit</div><div class="list-sub">With parents and siblings</div></div>
+        </div>
+        <div class="list-item" style="border:none">
+          <div class="list-icon" style="background:#ede9fe">🗣️</div>
+          <div class="list-text"><div class="list-title">Languages</div><div class="list-sub">Kazakh (B1) · Chinese (native) · Russian (A2)</div></div>
+        </div>
+      </div>
+
+      <div class="section-heading">Integration Assessment</div>
+      <div class="card">
+        <div style="margin-bottom:10px">
+          <div class="progress-label"><span style="font-size:12px">Language adaptation</span><span style="font-size:12px;font-weight:600;color:var(--teal)">55%</span></div>
+          <div class="progress-track"><div class="progress-fill" style="width:55%;background:var(--teal)"></div></div>
+        </div>
+        <div style="margin-bottom:10px">
+          <div class="progress-label"><span style="font-size:12px">Legal documentation</span><span style="font-size:12px;font-weight:600;color:var(--navy)">58%</span></div>
+          <div class="progress-track"><div class="progress-fill" style="width:58%;background:var(--navy)"></div></div>
+        </div>
+        <div style="margin-bottom:10px">
+          <div class="progress-label"><span style="font-size:12px">Social integration</span><span style="font-size:12px;font-weight:600;color:var(--amber)">40%</span></div>
+          <div class="progress-track"><div class="progress-fill" style="width:40%;background:var(--amber)"></div></div>
+        </div>
+        <div>
+          <div class="progress-label"><span style="font-size:12px">Economic self-sufficiency</span><span style="font-size:12px;font-weight:600;color:var(--purple)">30%</span></div>
+          <div class="progress-track"><div class="progress-fill" style="width:30%;background:var(--purple)"></div></div>
+        </div>
+      </div>
+
+      <div style="margin:16px 0 8px;padding:12px 14px;background:white;border-radius:var(--radius-sm);border:1px solid var(--border)">
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Switch view</div>
+        <div style="font-size:13px;font-weight:500;color:var(--navy)">Are you a migration officer or researcher?</div>
+        <button onclick="showOfficerView()" style="margin-top:10px;background:var(--navy);color:white;border:none;border-radius:var(--radius-sm);padding:8px 16px;font-size:12px;font-weight:600;font-family:var(--font-body);cursor:pointer;width:100%">Switch to Officer Dashboard →</button>
+      </div>
+    </div>
+
+    <!-- OFFICER DASHBOARD (hidden initially) -->
+    <div id="officer-profile" style="display:none">
+      <div class="section-heading">Case Overview · May 2026</div>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-num">148</div>
+          <div class="stat-lbl">Active cases</div>
+          <div class="stat-change" style="color:var(--teal)">↑ 12 this month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" style="color:var(--coral)">23</div>
+          <div class="stat-lbl">Need attention</div>
+          <div class="stat-change" style="color:var(--coral)">↑ 4 new</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" style="color:var(--teal)">89%</div>
+          <div class="stat-lbl">Avg completion</div>
+          <div class="stat-change" style="color:var(--teal)">↑ 2%</div>
+        </div>
+      </div>
+
+      <div class="section-heading">Origin distribution</div>
+      <div class="card">
+        <div class="bar-row">
+          <div class="bar-label">China</div>
+          <div class="bar-track"><div class="bar-fill" style="width:54%;background:var(--coral)"></div></div>
+          <div class="bar-pct">54%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Mongolia</div>
+          <div class="bar-track"><div class="bar-fill" style="width:28%;background:var(--navy)"></div></div>
+          <div class="bar-pct">28%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Uzbekistan</div>
+          <div class="bar-track"><div class="bar-fill" style="width:18%;background:var(--teal)"></div></div>
+          <div class="bar-pct">18%</div>
+        </div>
+      </div>
+
+      <div class="section-heading">Language at arrival</div>
+      <div class="card">
+        <div class="bar-row">
+          <div class="bar-label">Beginner</div>
+          <div class="bar-track"><div class="bar-fill" style="width:42%;background:#e0f2fe"></div></div>
+          <div class="bar-pct" style="color:var(--navy)">42%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Elementary</div>
+          <div class="bar-track"><div class="bar-fill" style="width:31%;background:#bae6fd"></div></div>
+          <div class="bar-pct" style="color:var(--navy)">31%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Intermediate</div>
+          <div class="bar-track"><div class="bar-fill" style="width:18%;background:#38bdf8"></div></div>
+          <div class="bar-pct" style="color:var(--navy)">18%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Fluent</div>
+          <div class="bar-track"><div class="bar-fill" style="width:9%;background:#0284c7"></div></div>
+          <div class="bar-pct" style="color:var(--navy)">9%</div>
+        </div>
+      </div>
+
+      <div class="section-heading">Flagged cases</div>
+      <div class="card">
+        <div class="list-item" onclick="showToast('📋 Opening case file…')">
+          <div class="list-icon" style="background:#fee2e2">🚨</div>
+          <div class="list-text">
+            <div class="list-title">Aigerim S. · Permit expiry</div>
+            <div class="list-sub">Work permit expires in 8 days</div>
+          </div>
+          <span class="badge badge-coral">Urgent</span>
+        </div>
+        <div class="list-item" onclick="showToast('📋 Opening case file…')">
+          <div class="list-icon" style="background:#fef3c7">⚠️</div>
+          <div class="list-text">
+            <div class="list-title">Bekzod K. · School enrollment</div>
+            <div class="list-sub">3 children pending placement</div>
+          </div>
+          <span class="badge badge-amber">Pending</span>
+        </div>
+        <div class="list-item" onclick="showToast('📋 Opening case file…')">
+          <div class="list-icon" style="background:#fef3c7">📑</div>
+          <div class="list-text">
+            <div class="list-title">Nurzhan A. · Missing docs</div>
+            <div class="list-sub">Birth certificate translation needed</div>
+          </div>
+          <span class="badge badge-amber">Action needed</span>
+        </div>
+      </div>
+
+      <div class="section-heading">Top migration reasons (survey data)</div>
+      <div class="card">
+        <div class="bar-row"><div class="bar-label" style="width:100px;font-size:10px">Duty/ancestry</div><div class="bar-track"><div class="bar-fill" style="width:68%;background:var(--gold)"></div></div><div class="bar-pct">68%</div></div>
+        <div class="bar-row"><div class="bar-label" style="width:100px;font-size:10px">Children future</div><div class="bar-track"><div class="bar-fill" style="width:55%;background:var(--teal)"></div></div><div class="bar-pct">55%</div></div>
+        <div class="bar-row"><div class="bar-label" style="width:100px;font-size:10px">Better economy</div><div class="bar-track"><div class="bar-fill" style="width:49%;background:var(--navy)"></div></div><div class="bar-pct">49%</div></div>
+        <div class="bar-row"><div class="bar-label" style="width:100px;font-size:10px">Job opportunity</div><div class="bar-track"><div class="bar-fill" style="width:38%;background:var(--purple)"></div></div><div class="bar-pct">38%</div></div>
+      </div>
+
+      <button onclick="showMigrantView()" style="width:100%;margin-top:4px;margin-bottom:16px;background:var(--bg2);color:var(--navy);border:none;border-radius:var(--radius-sm);padding:10px;font-size:12px;font-weight:600;font-family:var(--font-body);cursor:pointer">← Back to Migrant View</button>
+    </div>
+
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goToTab('tab-home')"><div class="nav-icon">🏠</div><div class="nav-label">Home</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goToTab('tab-guide')"><div class="nav-icon">🤖</div><div class="nav-label">AI Guide</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goToTab('tab-docs')"><div class="nav-icon">📄</div><div class="nav-label">Docs</div><div class="nav-dot"></div></div>
+    <div class="nav-item" onclick="goToTab('tab-resources')"><div class="nav-icon">📍</div><div class="nav-label">Services</div><div class="nav-dot"></div></div>
+    <div class="nav-item active" onclick="goToTab('tab-profile')"><div class="nav-icon">👤</div><div class="nav-label">Profile</div><div class="nav-dot"></div></div>
+  </div>
+</div>
+
+<script>
+// ── TIME ──
+function updateTime() {
+  const now = new Date();
+  const t = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  document.querySelectorAll('.status-bar span:first-child').forEach(el => el.textContent = t);
+}
+updateTime(); setInterval(updateTime, 30000);
+
+// ── ROLE ──
+let userRole = localStorage.getItem('kb_role') || null;
+let chatLang = 'en';
+
+window.addEventListener('load', () => {
+  if (userRole) {
+    document.getElementById('onboard').classList.add('hidden');
+    setTimeout(() => document.getElementById('onboard').remove(), 500);
+    applyRole(userRole);
+  }
+});
+
+function selectRole(role) {
+  userRole = role;
+  localStorage.setItem('kb_role', role);
+  applyRole(role);
+  const onboard = document.getElementById('onboard');
+  onboard.classList.add('hidden');
+  setTimeout(() => onboard.remove(), 500);
+}
+
+function applyRole(role) {
+  const label = document.getElementById('home-role-label');
+  const greeting = document.getElementById('greeting');
+  if (role === 'officer') {
+    label.textContent = 'Migration Officer Dashboard';
+    greeting.textContent = 'Сәлем, welcome, Officer 👋';
+    document.getElementById('user-name').textContent = 'Officer Daniyar';
+  } else if (role === 'researcher') {
+    label.textContent = 'Research & Analytics View';
+    greeting.textContent = 'Good day, Researcher 👋';
+    document.getElementById('user-name').textContent = 'Dr. Nursulu A.';
+  } else {
+    label.textContent = 'Your integration companion';
+    greeting.textContent = 'Сәлем, welcome back 👋';
+    document.getElementById('user-name').textContent = 'Aizat K.';
+  }
+}
+
+// ── NAVIGATION ──
+const tabs = {
+  'tab-home': 'screen-home',
+  'tab-guide': 'screen-guide',
+  'tab-docs': 'screen-docs',
+  'tab-resources': 'screen-resources',
+  'tab-profile': 'screen-profile',
+};
+let currentTab = 'tab-home';
+
+function goToTab(tabId) {
+  if (tabId === currentTab) return;
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+    s.classList.add('slide-back');
+  });
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  setTimeout(() => {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('slide-back'));
+    const screenId = tabs[tabId];
+    if (screenId) {
+      document.getElementById(screenId).classList.add('active');
+      document.querySelectorAll('.nav-item').forEach(n => {
+        const onclick = n.getAttribute('onclick');
+        if (onclick && onclick.includes(tabId)) n.classList.add('active');
+      });
+    }
+    currentTab = tabId;
+  }, 150);
+}
+
+// ── CHAT ──
+const responses = {
+  en: {
+    'oralmandyk': "The **Oralmandyk** status is for ethnic Kazakhs returning from abroad. You'll need:\n\n1. Proof of Kazakh ethnicity (family documents)\n2. Valid passport\n3. Application Form 17b from the migration office\n4. Pass a Kazakh language assessment\n\nProcessing takes 2–6 months. You're entitled to free language training and a one-time settlement allowance. Shall I help you prepare the documents checklist?",
+    'school': "To enroll children in a Kazakhstan school:\n\n1. Visit your local akimat (district office)\n2. Bring: birth certificate (translated), passport copies, medical records\n3. Kazakh public schools are **free** for Oralman children\n4. Language support classes are usually available\n\nIf children don't yet speak Kazakh/Russian, ask specifically for an adaptation program. Would you like me to find the nearest school to your location?",
+    'job': "Finding work in Kazakhstan as a Kandas:\n\n• **Kandas Job Placement Program** (government): Free, matches you to employers\n• Your qualifications from China/Mongolia/Uzbekistan may need **revalidation** — contact the Ministry of Education\n• High demand sectors: agriculture, construction, education (Kazakh teachers)\n• IIN (tax number) is required before employment — have you registered yet?",
+    'healthcare': "Healthcare registration steps:\n\n1. Get your IIN (tax number) first\n2. Register at your nearest district polyclinic\n3. Enroll in **MSHI** (mandatory state health insurance) — low cost for Oralmans\n4. Bring: passport, registration document, IIN certificate\n\nOralmans are entitled to basic healthcare at reduced rates. Children's vaccinations are free.",
+    'default': "I can help you with many topics. Common areas where Kandas need support:\n\n• 📋 **Legal status** — Oralmandyk, permits, residency\n• 🏫 **Education** — school enrollment, Kazakh language\n• 💼 **Employment** — job placement, qualification recognition\n• 🏥 **Healthcare** — registration, insurance\n• 🏠 **Housing** — settlement allowance, local registration\n\nPlease ask more specifically and I'll give you step-by-step guidance!"
+  },
+  kz: {
+    'default': "Сізге қандай мәселе бойынша көмек керек?\n\n• 📋 Заңдық мәртебе\n• 🏫 Білім алу\n• 💼 Жұмыс табу\n• 🏥 Денсаулық сақтау\n• 🗣️ Қазақ тілін үйрену\n\nСұрақ қойыңыз — мен жауап беремін!",
+    'oralmandyk': "Оралман мәртебесін алу үшін:\n\n1. Қазақ ұлтынан екеніңізді дәлелдейтін құжат\n2. Жарамды төлқұжат\n3. Миграция қызметінен 17б нысаны\n4. Қазақ тілін білу тесті\n\nҚарастыру мерзімі 2–6 ай. Тегін тіл курстары мен жер-жайлау жәрдемақысы беріледі."
+  },
+  ru: {
+    'default': "Я помогу вам с любым вопросом! Часто задаваемые вопросы:\n\n• 📋 **Правовой статус** — оралман, разрешения\n• 🏫 **Образование** — зачисление в школу\n• 💼 **Трудоустройство**\n• 🏥 **Здравоохранение**\n• 🗣️ **Изучение казахского языка**\n\nЗадайте конкретный вопрос — я дам пошаговые инструкции!",
+    'oralmandyk': "Статус оралмана:\n\n1. Доказательство казахского происхождения\n2. Действующий паспорт\n3. Форма 17б из миграционной службы\n4. Тест на знание казахского языка\n\nСрок рассмотрения 2–6 месяцев. Бесплатные языковые курсы и единовременное пособие."
+  },
+  zh: {
+    'default': "您好！我可以帮您解答以下问题：\n\n• 📋 **法律身份** — 哈萨克回归者资格\n• 🏫 **教育** — 孩子入学\n• 💼 **就业**\n• 🏥 **医疗保健**\n• 🗣️ **哈萨克语学习**\n\n请用中文提问，我会给您详细指导！",
+    'oralmandyk': "申请奥拉尔曼（Oralmandyk）身份需要：\n\n1. 哈萨克族证明文件\n2. 有效护照\n3. 移民办公室的17b表格\n4. 哈萨克语水平测试\n\n审理时间2-6个月。可获免费语言培训和一次性安置补贴。"
+  },
+  mn: {
+    'default': "Танд ямар асуудлаар тусалж болох вэ?\n\n• Хууль эрх зүйн байдал\n• Боловсрол\n• Ажил хөдөлмөр\n• Эрүүл мэнд\n\nАсуугаарай — би хариулна!"
+  }
+};
+
+function getResponse(msg) {
+  const lower = msg.toLowerCase();
+  const langRes = responses[chatLang] || responses['en'];
+  if (lower.includes('oralman') || lower.includes('статус') || lower.includes('мәртебе') || lower.includes('奥拉尔')) return langRes['oralmandyk'] || responses['en']['oralmandyk'];
+  if (lower.includes('school') || lower.includes('мектеп') || lower.includes('школ') || lower.includes('学校')) return (langRes['school'] || responses['en']['school']);
+  if (lower.includes('job') || lower.includes('work') || lower.includes('жұмыс') || lower.includes('работ') || lower.includes('工作')) return (langRes['job'] || responses['en']['job']);
+  if (lower.includes('health') || lower.includes('медицин') || lower.includes('денсаул') || lower.includes('医疗')) return (langRes['healthcare'] || responses['en']['healthcare']);
+  return langRes['default'] || responses['en']['default'];
+}
+
+function addBubble(text, isUser) {
+  const area = document.getElementById('chat-area');
+  const div = document.createElement('div');
+  div.className = 'chat-bubble ' + (isUser ? 'bubble-user' : 'bubble-bot');
+  div.innerHTML = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function showTyping() {
+  const area = document.getElementById('chat-area');
+  const div = document.createElement('div');
+  div.className = 'chat-bubble bubble-typing';
+  div.id = 'typing-indicator';
+  div.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function hideTyping() {
+  const t = document.getElementById('typing-indicator');
+  if (t) t.remove();
+}
+
+function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  addBubble(msg, true);
+  input.value = '';
+  input.style.height = 'auto';
+  showTyping();
+  const delay = 800 + Math.random() * 700;
+  setTimeout(() => {
+    hideTyping();
+    addBubble(getResponse(msg), false);
+  }, delay);
+}
+
+function sendQuick(msg) {
+  document.getElementById('chat-input').value = msg;
+  sendMessage();
+}
+
+function clearChat() {
+  const area = document.getElementById('chat-area');
+  area.innerHTML = '<div class="chat-bubble bubble-bot">Chat cleared. How can I help you? 😊</div>';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function setLang(btn, lang) {
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  chatLang = lang;
+}
+
+// ── CHECKLIST ──
+function toggleCheck(item) {
+  const circle = item.querySelector('.check-circle');
+  const isDone = circle.classList.contains('done');
+  if (isDone) {
+    circle.classList.remove('done');
+    circle.textContent = '';
+    showToast('Item unchecked');
+  } else {
+    circle.classList.add('done');
+    circle.textContent = '✓';
+    showToast('✅ Item completed!');
+  }
+}
+
+// ── OFFICER ──
+function showOfficerView() {
+  document.getElementById('migrant-profile').style.display = 'none';
+  document.getElementById('officer-profile').style.display = 'block';
+  document.getElementById('profile-title').textContent = 'Officer Dashboard';
+  document.getElementById('profile-sub').textContent = 'Case management & analytics';
+  document.getElementById('profile-header').style.background = '#3d2b9e';
+}
+function showMigrantView() {
+  document.getElementById('migrant-profile').style.display = 'block';
+  document.getElementById('officer-profile').style.display = 'none';
+  document.getElementById('profile-title').textContent = 'My Profile';
+  document.getElementById('profile-sub').textContent = 'Kandas · From China';
+  document.getElementById('profile-header').style.background = 'var(--navy)';
+}
+
+// ── TOAST ──
+let toastTimer;
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ── AUTO-RESIZE TEXTAREA ──
+document.getElementById('chat-input').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+});
+</script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js")}</script>
+</body>
+</html>
